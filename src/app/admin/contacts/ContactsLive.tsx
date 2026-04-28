@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
 import { Mail, Trash2, Check, CircleDot } from "lucide-react";
+import { supabase } from "@/lib/supabase";
 
 export type MessageRow = {
   id: string;
@@ -18,30 +19,53 @@ export default function ContactsLive({ initial }: { initial: MessageRow[] }) {
   const [connected, setConnected] = useState(true);
 
   useEffect(() => {
-    let cancelled = false;
-
-    async function refresh() {
-      try {
-        const res = await fetch("/api/messages", { cache: "no-store" });
-        if (!res.ok) throw new Error("Failed");
-        const data = await res.json();
-        if (cancelled) return;
-
-        const next = Array.isArray(data.messages) ? (data.messages as MessageRow[]) : [];
-        setItems(next);
-        setSelected((current) => next.find((item) => item.id === current?.id) ?? next[0] ?? null);
-        setConnected(true);
-      } catch {
-        if (!cancelled) setConnected(false);
-      }
-    }
-
-    const interval = window.setInterval(refresh, 5000);
-    refresh();
+    const channel = supabase
+      .channel("messages")
+      .on(
+        "postgres_changes",
+        { event: "INSERT", schema: "public", table: "messages" },
+        ({ new: message }) => {
+          if (!message) return;
+          setItems((prev) => {
+            const next = [...prev.filter((item) => item.id !== message.id), message].sort(
+              (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+            );
+            return next;
+          });
+          setSelected((current) => current ?? message);
+        }
+      )
+      .on(
+        "postgres_changes",
+        { event: "UPDATE", schema: "public", table: "messages" },
+        ({ new: message }) => {
+          if (!message) return;
+          setItems((prev) =>
+            prev.map((item) => (item.id === message.id ? message : item))
+          );
+          setSelected((current) => (current?.id === message.id ? message : current));
+        }
+      )
+      .on(
+        "postgres_changes",
+        { event: "DELETE", schema: "public", table: "messages" },
+        ({ old: message }) => {
+          if (!message) return;
+          setItems((prev) => {
+            const next = prev.filter((item) => item.id !== message.id);
+            setSelected((current) =>
+              current?.id === message.id ? next[0] ?? null : current
+            );
+            return next;
+          });
+        }
+      )
+      .subscribe((status) => {
+        setConnected(status === "SUBSCRIBED" || status === "CHANNEL_JOINED");
+      });
 
     return () => {
-      cancelled = true;
-      window.clearInterval(interval);
+      void supabase.removeChannel(channel);
     };
   }, []);
 
