@@ -47,24 +47,14 @@ alter table public.messages enable row level security;
 
 -- admins: nobody. Service role bypasses RLS automatically.
 
--- projects: anyone can read; only service role writes.
+-- This app reads and writes through server routes with the service role.
+-- The policies below keep direct browser access unnecessary.
+
+-- projects: direct browser reads are not required.
 drop policy if exists "projects read all" on public.projects;
-create policy "projects read all"
-  on public.projects for select
-  to anon, authenticated
-  using (true);
 
--- messages: anyone can insert (contact form). Reads are admin-only (service role).
+-- messages: inserts also go through the server route.
 drop policy if exists "messages insert public" on public.messages;
-create policy "messages insert public"
-  on public.messages for insert
-  to anon, authenticated
-  with check (true);
-
--- ============================================================
--- Realtime: enable for messages so the admin contacts page updates live
--- ============================================================
-alter publication supabase_realtime add table public.messages;
 
 -- ============================================================
 -- Storage bucket for project images (public read)

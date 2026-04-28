@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
-import { supabaseAdmin } from "@/lib/supabase/admin";
 import { getSession } from "@/lib/auth";
+import { supabaseAdmin } from "@/lib/supabase";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -9,8 +9,7 @@ export async function GET() {
   const session = await getSession();
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const sb = supabaseAdmin();
-  const { data, error } = await sb
+  const { data, error } = await supabaseAdmin
     .from("messages")
     .select("*")
     .order("created_at", { ascending: false });

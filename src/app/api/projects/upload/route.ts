@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { randomUUID } from "crypto";
-import { supabaseAdmin } from "@/lib/supabase/admin";
 import { getSession } from "@/lib/auth";
+import { supabaseAdmin } from "@/lib/supabase";
 
 export const runtime = "nodejs";
 
@@ -30,8 +30,7 @@ export async function POST(req: Request) {
     const path = `${randomUUID()}.${ext}`;
     const buffer = Buffer.from(await file.arrayBuffer());
 
-    const sb = supabaseAdmin();
-    const { error: upErr } = await sb.storage
+    const { error: upErr } = await supabaseAdmin.storage
       .from(BUCKET)
       .upload(path, buffer, {
         contentType: file.type,
@@ -42,7 +41,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: upErr.message }, { status: 500 });
     }
 
-    const { data: pub } = sb.storage.from(BUCKET).getPublicUrl(path);
+    const { data: pub } = supabaseAdmin.storage.from(BUCKET).getPublicUrl(path);
     return NextResponse.json({ url: pub.publicUrl, path });
   } catch (err) {
     return NextResponse.json({ error: "Upload failed" }, { status: 400 });

@@ -1,25 +1,30 @@
 import Link from "next/link";
 import { FolderKanban, Mail } from "lucide-react";
-import { supabaseAdmin } from "@/lib/supabase/admin";
+import { supabaseAdmin } from "@/lib/supabase";
 
 export const dynamic = "force-dynamic";
 
 export default async function AdminDashboard() {
-  const sb = supabaseAdmin();
-  const [{ count: projectCount }, { count: messageCount }, { count: unreadCount }] =
-    await Promise.all([
-      sb.from("projects").select("id", { count: "exact", head: true }),
-      sb.from("messages").select("id", { count: "exact", head: true }),
-      sb
-        .from("messages")
-        .select("id", { count: "exact", head: true })
-        .eq("read", false),
+  let projectCount = 0;
+  let messageCount = 0;
+  let unreadCount = 0;
+
+  try {
+    const [projects, messages, unread] = await Promise.all([
+      supabaseAdmin.from("projects").select("id", { count: "exact", head: true }),
+      supabaseAdmin.from("messages").select("id", { count: "exact", head: true }),
+      supabaseAdmin.from("messages").select("id", { count: "exact", head: true }).eq("read", false),
     ]);
 
+    projectCount = projects.count ?? 0;
+    messageCount = messages.count ?? 0;
+    unreadCount = unread.count ?? 0;
+  } catch {}
+
   const stats = [
-    { label: "Projects", value: projectCount ?? 0, href: "/admin/projects", Icon: FolderKanban },
-    { label: "Messages", value: messageCount ?? 0, href: "/admin/contacts", Icon: Mail },
-    { label: "Unread", value: unreadCount ?? 0, href: "/admin/contacts", Icon: Mail },
+    { label: "Projects", value: projectCount, href: "/admin/projects", Icon: FolderKanban },
+    { label: "Messages", value: messageCount, href: "/admin/contacts", Icon: Mail },
+    { label: "Unread", value: unreadCount, href: "/admin/contacts", Icon: Mail },
   ];
 
   return (

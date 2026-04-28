@@ -1,14 +1,13 @@
 import { redirect } from "next/navigation";
-import { supabaseAdmin } from "@/lib/supabase/admin";
 import SignupForm from "./SignupForm";
+import { supabaseAdmin } from "@/lib/supabase";
 
 export const dynamic = "force-dynamic";
 
 export default async function SignupPage() {
-  const sb = supabaseAdmin();
-  const { count } = await sb
-    .from("admins")
-    .select("id", { count: "exact", head: true });
-  if ((count ?? 0) > 0) redirect("/admin/signin");
+  try {
+    const { count } = await supabaseAdmin.from("admins").select("id", { count: "exact", head: true });
+    if ((count ?? 0) > 0) redirect("/admin/signin");
+  } catch {}
   return <SignupForm />;
 }

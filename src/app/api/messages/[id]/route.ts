@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
-import { supabaseAdmin } from "@/lib/supabase/admin";
 import { getSession } from "@/lib/auth";
+import { supabaseAdmin } from "@/lib/supabase";
 
 export const runtime = "nodejs";
 
@@ -15,8 +15,7 @@ export async function PATCH(
     const body = await req.json();
     const update: Record<string, unknown> = {};
     if (typeof body.read === "boolean") update.read = body.read;
-    const sb = supabaseAdmin();
-    const { data, error } = await sb
+    const { data, error } = await supabaseAdmin
       .from("messages")
       .update(update)
       .eq("id", params.id)
@@ -36,8 +35,7 @@ export async function DELETE(
   const session = await getSession();
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const sb = supabaseAdmin();
-  const { error } = await sb.from("messages").delete().eq("id", params.id);
+  const { error } = await supabaseAdmin.from("messages").delete().eq("id", params.id);
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
   return NextResponse.json({ ok: true });
 }

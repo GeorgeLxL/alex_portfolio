@@ -1,6 +1,6 @@
 import Section from "./Section";
 import ProjectsGrid, { type Project } from "./ProjectsGrid";
-import { supabaseAdmin } from "@/lib/supabase/admin";
+import { supabaseAdmin } from "@/lib/supabase";
 
 const FALLBACK: Project[] = [
   {
@@ -29,8 +29,7 @@ const FALLBACK: Project[] = [
 
 async function loadProjects(): Promise<Project[]> {
   try {
-    const sb = supabaseAdmin();
-    const { data, error } = await sb
+    const { data, error } = await supabaseAdmin
       .from("projects")
       .select("id, title, category, description, tags, color, image_url, href")
       .order("sort_order", { ascending: true })

@@ -1,13 +1,12 @@
 import { NextResponse } from "next/server";
-import { supabaseAdmin } from "@/lib/supabase/admin";
 import { getSession } from "@/lib/auth";
+import { supabaseAdmin } from "@/lib/supabase";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 export async function GET() {
-  const sb = supabaseAdmin();
-  const { data, error } = await sb
+  const { data, error } = await supabaseAdmin
     .from("projects")
     .select("*")
     .order("sort_order", { ascending: true })
@@ -22,8 +21,7 @@ export async function POST(req: Request) {
 
   try {
     const body = await req.json();
-    const sb = supabaseAdmin();
-    const { data, error } = await sb
+    const { data, error } = await supabaseAdmin
       .from("projects")
       .insert({
         title: body.title ?? "",

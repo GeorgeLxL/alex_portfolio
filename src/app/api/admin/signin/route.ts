@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
-import { supabaseAdmin } from "@/lib/supabase/admin";
 import { signSession, setSessionCookie } from "@/lib/auth";
+import { supabaseAdmin } from "@/lib/supabase";
 
 export const runtime = "nodejs";
 
@@ -13,8 +13,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Invalid payload" }, { status: 400 });
     }
 
-    const sb = supabaseAdmin();
-    const { data, error } = await sb
+    const { data, error } = await supabaseAdmin
       .from("admins")
       .select("id, user_id, password_hash")
       .eq("user_id", userId)

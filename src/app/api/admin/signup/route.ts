@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
-import { supabaseAdmin } from "@/lib/supabase/admin";
 import { ADMIN_USER_ID, signSession, setSessionCookie } from "@/lib/auth";
+import { supabaseAdmin } from "@/lib/supabase";
 
 export const runtime = "nodejs";
 
@@ -25,9 +25,7 @@ export async function POST(req: Request) {
       );
     }
 
-    const sb = supabaseAdmin();
-
-    const { count, error: countErr } = await sb
+    const { count, error: countErr } = await supabaseAdmin
       .from("admins")
       .select("id", { count: "exact", head: true });
     if (countErr) return NextResponse.json({ error: countErr.message }, { status: 500 });
@@ -39,7 +37,7 @@ export async function POST(req: Request) {
     }
 
     const password_hash = await bcrypt.hash(password, 10);
-    const { data, error } = await sb
+    const { data, error } = await supabaseAdmin
       .from("admins")
       .insert({ user_id: userId, password_hash })
       .select("id, user_id")

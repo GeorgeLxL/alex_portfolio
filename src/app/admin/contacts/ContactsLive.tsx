@@ -1,7 +1,6 @@
 "use client";
 import { useEffect, useState } from "react";
 import { Mail, Trash2, Check, CircleDot } from "lucide-react";
-import { supabaseBrowser } from "@/lib/supabase/browser";
 
 export type MessageRow = {
   id: string;
@@ -16,57 +15,59 @@ export type MessageRow = {
 export default function ContactsLive({ initial }: { initial: MessageRow[] }) {
   const [items, setItems] = useState<MessageRow[]>(initial);
   const [selected, setSelected] = useState<MessageRow | null>(initial[0] ?? null);
-  const [connected, setConnected] = useState(false);
+  const [connected, setConnected] = useState(true);
 
   useEffect(() => {
-    const sb = supabaseBrowser();
-    const channel = sb
-      .channel("messages-feed")
-      .on(
-        "postgres_changes",
-        { event: "INSERT", schema: "public", table: "messages" },
-        (payload) => {
-          const row = payload.new as MessageRow;
-          setItems((prev) => [row, ...prev.filter((p) => p.id !== row.id)]);
-        }
-      )
-      .on(
-        "postgres_changes",
-        { event: "UPDATE", schema: "public", table: "messages" },
-        (payload) => {
-          const row = payload.new as MessageRow;
-          setItems((prev) => prev.map((p) => (p.id === row.id ? row : p)));
-          setSelected((s) => (s && s.id === row.id ? row : s));
-        }
-      )
-      .on(
-        "postgres_changes",
-        { event: "DELETE", schema: "public", table: "messages" },
-        (payload) => {
-          const row = payload.old as MessageRow;
-          setItems((prev) => prev.filter((p) => p.id !== row.id));
-          setSelected((s) => (s && s.id === row.id ? null : s));
-        }
-      )
-      .subscribe((status) => {
-        setConnected(status === "SUBSCRIBED");
-      });
+    let cancelled = false;
+
+    async function refresh() {
+      try {
+        const res = await fetch("/api/messages", { cache: "no-store" });
+        if (!res.ok) throw new Error("Failed");
+        const data = await res.json();
+        if (cancelled) return;
+
+        const next = Array.isArray(data.messages) ? (data.messages as MessageRow[]) : [];
+        setItems(next);
+        setSelected((current) => next.find((item) => item.id === current?.id) ?? next[0] ?? null);
+        setConnected(true);
+      } catch {
+        if (!cancelled) setConnected(false);
+      }
+    }
+
+    const interval = window.setInterval(refresh, 5000);
+    refresh();
+
     return () => {
-      sb.removeChannel(channel);
+      cancelled = true;
+      window.clearInterval(interval);
     };
   }, []);
 
   async function toggleRead(m: MessageRow) {
-    await fetch(`/api/messages/${m.id}`, {
+    const res = await fetch(`/api/messages/${m.id}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ read: !m.read }),
     });
+    const data = await res.json().catch(() => null);
+    if (!res.ok || !data?.message) return;
+
+    setItems((prev) => prev.map((item) => (item.id === m.id ? data.message : item)));
+    setSelected((current) => (current?.id === m.id ? data.message : current));
   }
 
   async function deleteMessage(m: MessageRow) {
     if (!confirm("Delete this message?")) return;
-    await fetch(`/api/messages/${m.id}`, { method: "DELETE" });
+    const res = await fetch(`/api/messages/${m.id}`, { method: "DELETE" });
+    if (!res.ok) return;
+
+    setItems((prev) => {
+      const next = prev.filter((item) => item.id !== m.id);
+      setSelected((current) => (current?.id === m.id ? next[0] ?? null : current));
+      return next;
+    });
   }
 
   const unread = items.filter((m) => !m.read).length;
@@ -86,7 +87,7 @@ export default function ContactsLive({ initial }: { initial: MessageRow[] }) {
               connected ? "bg-emerald-400 animate-pulse" : "bg-rose-400"
             }`}
           />
-          {connected ? "Live" : "Disconnected"}
+          {connected ? "Auto-refreshing" : "Disconnected"}
         </div>
       </div>
 
