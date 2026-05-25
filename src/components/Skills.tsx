@@ -7,6 +7,7 @@ import {
   Cloud,
   Database,
   Cpu,
+  Gamepad2,
 } from "lucide-react";
 
 const skills = [
@@ -45,6 +46,12 @@ const skills = [
     title: "Architecture",
     desc: "Microservices, event-driven systems and distributed designs that stay debuggable as they grow.",
     tags: ["Microservices", "Event-driven", "System Design", "Distributed"],
+  },
+  {
+    icon: Gamepad2,
+    title: "Game Development",
+    desc: "3D game prototypes and tools in Panda3D — real-time rendering, scene graphs, physics and input pipelines.",
+    tags: ["Panda3D", "Python", "OpenGL", "Bullet Physics", "Blender"],
   },
 ];
 

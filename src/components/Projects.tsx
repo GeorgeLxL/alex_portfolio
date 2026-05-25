@@ -27,6 +27,17 @@ const FALLBACK: Project[] = [
     image_url: null,
     href: "https://github.com/yamposskype",
   },
+  {
+    id: "fallback-3",
+    title: "Panda3D Game Prototype",
+    category: "3D Game Development",
+    description:
+      "Real-time 3D game prototype built in Panda3D with a custom scene graph, Bullet physics, animated characters and a modular asset pipeline from Blender.",
+    tags: ["Panda3D", "Python", "Bullet Physics", "OpenGL", "Blender"],
+    color: "from-emerald-500/30 to-lime-500/30",
+    image_url: null,
+    href: "https://github.com/yamposskype",
+  },
 ];
 
 export default function Projects() {
